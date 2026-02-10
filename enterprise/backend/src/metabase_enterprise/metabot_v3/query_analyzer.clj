@@ -118,9 +118,11 @@
   (let [db-id      (:database query)
         macaw-opts (driver.u/macaw-options driver)
         table-opts (assoc macaw-opts :mode mode)
-        sql-string (:query (nqa.sub/replace-tags query))
-        result     (macaw/query->tables sql-string table-opts)]
-    (u/update-if-exists result :tables table-refs-for-query db-id)))
+        sql-string (:query (nqa.sub/replace-tags query))]
+    (if (str/blank? sql-string)
+      {:tables []}
+      (let [result (macaw/query->tables sql-string table-opts)]
+        (u/update-if-exists result :tables table-refs-for-query db-id)))))
 
 ;; Keeping this multimethod private for now, need some hammock time on what to expose to drivers.
 (defmulti ^:private tables-for-native*
