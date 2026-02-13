@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 
 import { PLUGIN_LIBRARY } from "metabase/plugins";
+import type { MenuDropdownProps } from "metabase/ui";
 import { Box, Menu } from "metabase/ui";
 
 import type { DataPickerValue } from "../../../DataPicker";
@@ -26,6 +27,9 @@ export type MiniPickerProps = {
   onBrowseAll?: () => void;
   shouldHide?: (item: MiniPickerItem | unknown) => boolean;
   shouldShowLibrary?: boolean;
+  children?: React.ReactNode;
+  menuDropdownProps?: MenuDropdownProps;
+  closeOnClickOutside?: boolean;
 };
 
 export function MiniPicker({
@@ -39,6 +43,9 @@ export function MiniPicker({
   trapFocus = false,
   shouldHide,
   shouldShowLibrary = true,
+  children = <Box />,
+  menuDropdownProps,
+  closeOnClickOutside = true,
 }: MiniPickerProps) {
   const { data: libraryCollection } = PLUGIN_LIBRARY.useGetLibraryCollection();
 
@@ -90,20 +97,18 @@ export function MiniPicker({
         onChange={onClose}
         closeOnItemClick={false}
         clickOutsideEvents={["mousedown", "touchstart"]}
+        closeOnClickOutside={closeOnClickOutside}
         position="bottom-start"
         // menuItemTabIndex={-1}
         trapFocus={false}
       >
-        <Menu.Target>
-          <Box />
-        </Menu.Target>
+        <Menu.Target>{children}</Menu.Target>
 
         <Menu.Dropdown
-          mt="xl"
-          ml="-1rem"
           px={0}
           py="sm"
           data-testid="mini-picker"
+          {...menuDropdownProps}
         >
           {isLoadingPath ? <MiniPickerListLoader /> : <MiniPickerPane />}
         </Menu.Dropdown>
