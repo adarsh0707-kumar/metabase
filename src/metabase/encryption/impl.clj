@@ -1,6 +1,14 @@
-(ns metabase.util.encryption
-  "Utility functions for encrypting and decrypting strings using AES256 CBC + HMAC SHA512 and the
-  `MB_ENCRYPTION_SECRET_KEY` env var.
+(ns metabase.encryption.impl
+  "Low-level AES256 CBC + HMAC SHA512 encryption primitives using the `MB_ENCRYPTION_SECRET_KEY`
+  env var.
+
+  Use this namespace when you need raw encrypt/decrypt operations, stream encryption, or key
+  hashing. For high-level operations (key rotation, encryption setup, migration) use
+  [[metabase.encryption.core]] instead.
+
+  **IMPORTANT**:
+  If you're tempted to use this namespace to encrypt/decrypt values on their way in/out of the database for a
+  model, you almost certainly want to use `metabase.encryption.spec` instead.**
 
   You can generate a new key with something like
 
