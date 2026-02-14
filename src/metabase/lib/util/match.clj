@@ -269,7 +269,8 @@
                     cnt (count parts)]
                 (vswap! bindings conj (with-meta [s `(metabase.lib.util.match.impl/vector! ~value)]
                                                  {:vector-check true}))
-                (dorun (map-indexed #(process-pattern %2 (with-meta (list `nth s %1 nil) (meta s))
+                (dorun (map-indexed #(process-pattern %2 (with-meta (list `nth s %1 nil) (or (meta s)
+                                                                                             {:depends-on s}))
                                                       bindings conditions return) parts))
                 (if rest-part
                   (process-pattern rest-part (list `drop cnt s) bindings conditions false)
@@ -330,17 +331,18 @@
                                                        ;; Ensure that variable for common condition is already bound.
                                                        (seq-contains? (map first common-bindings)
                                                                       (:depends-on (meta condition)))))
-                                  (first conditions))]
-    {:common-bindings (mapv strip-meta common-bindings)
+                                  (first conditions))
+        clear-bindings-meta #(strip-meta (mapv (fn [[s v]] [s (strip-meta v)]) %))]
+    {:common-bindings (clear-bindings-meta common-bindings)
      :common-conditions (mapv strip-meta common-conditions)
      :all-bindings (mapv (fn [bindings]
-                           (strip-meta (remove #(seq-contains? common-bindings %) bindings)))
+                           (clear-bindings-meta (remove #(seq-contains? common-bindings %) bindings)))
                          bindings)
      :all-conditions (->> conditions
                           (mapv (fn [conditions]
                                   (->> conditions
                                        (remove #(seq-contains? common-conditions %))
-                                       (mapv strip-meta)))))}))
+                                       strip-meta))))}))
 
 (defn- expand-conditions [combiner conditions body & [bool?]]
   (case (count conditions)
@@ -378,7 +380,7 @@
         value-binding (if common-vector-check?
                         `(metabase.lib.util.match.impl/vector! ~(or value-binding value-sym))
                         value-binding)]
-    `(let [~@(when (some? value-binding)
+    `(let [~@(when (and (some? value-binding) (not= value-sym value-binding))
                [value-sym value-binding])
            ~@(mapcat identity common-bindings)]
        ~(expand-conditions
@@ -603,3 +605,18 @@
   `(metabase.lib.util.match.impl/update-in-unless-empty ~x ~ks (fn [x#] (replace* x# ~patterns-and-results))))
 
 ;; TODO - it would be useful to have something like a `replace-all` function as well
+
+(defmacro replace-lite
+  "Walk `form` recursively and replace all patterns matched with `match-lite` by the respective return expressions. The
+  same pattern options are supported, and `&parents` and `&match` anaphors are available in the same way."
+  [form & clauses]
+  (let [replace-fn-symb (gensym "replace-")
+        contains-&parents? (contains-symbol? clauses '&parents)]
+    `((fn ~replace-fn-symb [~'&match ~'&parents]
+        (match-lite ~'&match
+          ~@clauses
+          ~'_ (metabase.lib.util.match.impl/replace-lite-in-collection
+               ~replace-fn-symb ~'&match ~(when contains-&parents?
+                                            '&parents))))
+      ~form
+      ~(when contains-&parents? []))))

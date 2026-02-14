@@ -332,8 +332,8 @@
 
 (defn- local-replace-expression-references [stage target-ref-id replacement-ref]
   (let [replace-embedded-refs (fn replace-refs [stage]
-                                (lib.util.match/replace stage
-                                  [:expression _ target-ref-id]
+                                (lib.util.match/replace-lite stage
+                                  [:expression _ (id :guard (= id target-ref-id))]
                                   (-> replacement-ref
                                       fresh-ref)))]
     (replace-embedded-refs stage)))
