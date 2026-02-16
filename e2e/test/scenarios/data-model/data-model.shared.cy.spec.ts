@@ -763,7 +763,13 @@ describe.each<Area>(areas)("data model > %s", (area: Area) => {
         // Use trigger("mouseenter") instead of realHover() because Chrome v133+
         // headless hit-tests CDP mouse events differently, preventing the
         // HoverCard from appearing.
-        PreviewSection.get().findByTestId("header-cell").trigger("mouseenter");
+        // Target the HoverCard.Target's child (parent of cell-data) since
+        // mouseenter doesn't bubble up to header-cell.
+        PreviewSection.get()
+          .findByTestId("header-cell")
+          .findByTestId("cell-data")
+          .parent()
+          .trigger("mouseenter");
         H.hovercard().should("not.contain.text", "The total billed amount.");
 
         cy.visit(
@@ -2775,7 +2781,12 @@ function verifyTablePreview({
       // Use trigger("mouseenter") instead of realHover() because Chrome v133+
       // headless hit-tests CDP mouse events differently, preventing the
       // HoverCard from appearing.
-      cy.findByTestId("header-cell").trigger("mouseenter");
+      // Target the HoverCard.Target's child (parent of cell-data) since
+      // mouseenter doesn't bubble up to header-cell.
+      cy.findByTestId("header-cell")
+        .findByTestId("cell-data")
+        .parent()
+        .trigger("mouseenter");
     }
   });
 

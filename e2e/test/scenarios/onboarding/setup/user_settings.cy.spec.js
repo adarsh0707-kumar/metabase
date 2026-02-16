@@ -263,17 +263,21 @@ describe("user > settings", () => {
       H.navigationSidebar().findByRole("link", { name: /Home/ }).click();
       // Wait for navigation to complete so kbar shortcut handlers are re-registered
       cy.location("pathname").should("eq", "/");
-      // Use cy.trigger() instead of cy.realPress() because Chrome v123+ headless
-      // routes CDP keyboard events through the browser accelerator pipeline,
-      // which can intercept Ctrl+Shift+L before it reaches kbar's window keydown
-      // listener. cy.trigger() dispatches directly in the DOM, bypassing CDP.
-      cy.get("body").trigger("keydown", {
-        key: "l",
-        code: "KeyL",
-        metaKey: isMac,
-        ctrlKey: !isMac,
-        shiftKey: true,
-        bubbles: true,
+      // Dispatch a proper KeyboardEvent directly on window where kbar listens.
+      // cy.realPress() fails because Chrome v123+ headless routes CDP keyboard
+      // events through the browser accelerator pipeline. cy.trigger() creates a
+      // generic Event (not KeyboardEvent) which kbar/tinykeys doesn't recognise.
+      cy.window().then((win) => {
+        win.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "L",
+            code: "KeyL",
+            metaKey: isMac,
+            ctrlKey: !isMac,
+            shiftKey: true,
+            bubbles: true,
+          }),
+        );
       });
       assertDarkMode();
     });
