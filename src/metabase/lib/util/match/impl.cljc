@@ -85,6 +85,11 @@
   [coll cnt]
   (= (count coll) cnt))
 
+(defn count>=
+  "Return true if collection `coll` has `cnt` elements or more."
+  [coll cnt]
+  (>= (count coll) cnt))
+
 (defn wrap-nil
   "If `value` is nil, return `::wrapped-nil`, otherwise return `value`."
   [value]

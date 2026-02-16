@@ -1260,7 +1260,7 @@
 
     {:source-table (id :guard portable-id?)}
     (-> &match
-        (assoc :source-table (str "card__" (*import-fk*  'Card)))
+        (assoc :source-table (str "card__" (*import-fk* id 'Card)))
         mbql-fully-qualified-names->ids*)
 
     {:source_table (id :guard portable-id?)}

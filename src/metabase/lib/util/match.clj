@@ -272,10 +272,13 @@
                 (dorun (map-indexed #(process-pattern %2 (with-meta (list `nth s %1 nil) (or (meta s)
                                                                                              {:depends-on s}))
                                                       bindings conditions return) parts))
-                (if rest-part
-                  (process-pattern rest-part (list `drop cnt s) bindings conditions false)
-                  (vswap! conditions conj (with-meta (list `metabase.lib.util.match.impl/count= s cnt)
-                                                     {:depends-on s}))))
+                (when (pos? cnt)
+                  (vswap! conditions conj (with-meta (list (if rest-part
+                                                             `metabase.lib.util.match.impl/count>=
+                                                             `metabase.lib.util.match.impl/count=) s cnt)
+                                                     {:depends-on s})))
+                (when rest-part
+                  (process-pattern rest-part (list `drop cnt s) bindings conditions false)))
       :map (let [s (if (symbol? value) value (gensym "map"))]
              (vswap! bindings conj [s `(metabase.lib.util.match.impl/map! ~value)])
              (run! (fn [[k v]]
