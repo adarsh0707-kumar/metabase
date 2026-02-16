@@ -247,7 +247,6 @@ describe("user > settings", () => {
 
   describe("dark mode", () => {
     const isMac = Cypress.platform === "darwin";
-    const metaKey = isMac ? "Meta" : "Control";
 
     it("should toggle through light and dark mode when clicking on the label or icon", () => {
       cy.visit("/account/profile");
@@ -264,7 +263,18 @@ describe("user > settings", () => {
       H.navigationSidebar().findByRole("link", { name: /Home/ }).click();
       // Wait for navigation to complete so kbar shortcut handlers are re-registered
       cy.location("pathname").should("eq", "/");
-      cy.realPress([metaKey, "Shift", "L"]);
+      // Use cy.trigger() instead of cy.realPress() because Chrome v123+ headless
+      // routes CDP keyboard events through the browser accelerator pipeline,
+      // which can intercept Ctrl+Shift+L before it reaches kbar's window keydown
+      // listener. cy.trigger() dispatches directly in the DOM, bypassing CDP.
+      cy.get("body").trigger("keydown", {
+        key: "l",
+        code: "KeyL",
+        metaKey: isMac,
+        ctrlKey: !isMac,
+        shiftKey: true,
+        bubbles: true,
+      });
       assertDarkMode();
     });
 

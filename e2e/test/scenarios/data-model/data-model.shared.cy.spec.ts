@@ -760,7 +760,10 @@ describe.each<Area>(areas)("data model > %s", (area: Area) => {
           column: "Total",
           values: ["39.72", "117.03", "49.21", "115.23", "134.91"],
         });
-        PreviewSection.get().findByTestId("header-cell").realHover();
+        // Use trigger("mouseenter") instead of realHover() because Chrome v133+
+        // headless hit-tests CDP mouse events differently, preventing the
+        // HoverCard from appearing.
+        PreviewSection.get().findByTestId("header-cell").trigger("mouseenter");
         H.hovercard().should("not.contain.text", "The total billed amount.");
 
         cy.visit(
@@ -2769,7 +2772,10 @@ function verifyTablePreview({
     });
 
     if (description != null) {
-      cy.findByTestId("header-cell").realHover();
+      // Use trigger("mouseenter") instead of realHover() because Chrome v133+
+      // headless hit-tests CDP mouse events differently, preventing the
+      // HoverCard from appearing.
+      cy.findByTestId("header-cell").trigger("mouseenter");
     }
   });
 
