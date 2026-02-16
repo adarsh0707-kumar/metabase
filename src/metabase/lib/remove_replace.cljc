@@ -557,8 +557,8 @@
 
 (defn- replace-join-alias
   [a-join old-name new-name]
-  (lib.util.match/replace a-join
-    (field :guard #(field-clause-with-join-alias? % old-name))
+  (lib.util.match/replace-lite a-join
+    (field :guard (field-clause-with-join-alias? field old-name))
     (lib.join/with-join-alias field new-name)))
 
 (defn- rename-join-in-stage

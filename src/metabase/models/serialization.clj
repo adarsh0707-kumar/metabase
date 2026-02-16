@@ -1167,14 +1167,14 @@
 
 (defn- ids->fully-qualified-names
   [entity]
-  (lib.util.match/replace entity
-    mbql-entity-reference?
+  (lib.util.match/replace-lite entity
+    (_ :guard mbql-entity-reference?)
     (mbql-id->fully-qualified-name &match)
 
-    sequential?
+    (_ :guard sequential?)
     (mapv ids->fully-qualified-names &match)
 
-    map?
+    (_ :guard map?)
     (reduce-kv
      (fn [entity k _v]
        (let [f (case k
@@ -1210,16 +1210,16 @@
 
 (defn- mbql-fully-qualified-names->ids*
   [entity]
-  (lib.util.match/replace entity
+  (lib.util.match/replace-lite entity
     ;; handle legacy `:field-id` forms encoded prior to 0.39.0
     ;; and also *current* expression forms used in parameter mapping dimensions
     ;; example relevant clause - [:dimension [:fk-> [:field-id 1] [:field-id 2]]]
-    [(:or :field-id "field-id") fully-qualified-name]
+    [#{:field-id "field-id"} fully-qualified-name]
     (mbql-fully-qualified-names->ids* [:field fully-qualified-name])
 
-    [(:or :field "field") (fully-qualified-name :guard vector?) opts]
+    [#{:field "field"} (fully-qualified-name :guard vector?) opts]
     [:field (*import-field-fk* fully-qualified-name) (mbql-fully-qualified-names->ids* opts)]
-    [(:or :field "field") (fully-qualified-name :guard vector?)]
+    [#{:field "field"} (fully-qualified-name :guard vector?)]
     [:field (*import-field-fk* fully-qualified-name)]
 
     ;; source-field is also used within parameter mapping dimensions
@@ -1239,38 +1239,38 @@
         (assoc :card-id (*import-fk* entity-id 'Card))
         mbql-fully-qualified-names->ids*) ; Process other keys
 
-    [(:or :metric "metric") (entity-id :guard portable-id?)]
+    [#{:metric "metric"} (entity-id :guard portable-id?)]
     [:metric (*import-fk* entity-id 'Card)]
 
-    [(:or :segment "segment") (fully-qualified-name :guard portable-id?)]
+    [#{:segment "segment"} (fully-qualified-name :guard portable-id?)]
     [:segment (*import-fk* fully-qualified-name 'Segment)]
 
-    [(:or :measure "measure") (fully-qualified-name :guard portable-id?)]
+    [#{:measure "measure"} (fully-qualified-name :guard portable-id?)]
     [:measure (*import-fk* fully-qualified-name 'Measure)]
 
-    (_ :guard (every-pred map? #(vector? (:source-table %))))
+    {:source-table (_ :guard vector?)}
     (-> &match
-        (assoc :source-table (*import-table-fk* (:source-table &match)))
+        (update :source-table *import-table-fk*)
         mbql-fully-qualified-names->ids*)
 
-    (_ :guard (every-pred map? #(vector? (:source_table %))))
+    {:source_table (_ :guard vector?)}
     (-> &match
-        (assoc :source_table (*import-table-fk* (:source_table &match)))
+        (update :source_table *import-table-fk*)
         mbql-fully-qualified-names->ids*)
 
-    (_ :guard (every-pred map? (comp portable-id? :source-table)))
+    {:source-table (id :guard portable-id?)}
     (-> &match
-        (assoc :source-table (str "card__" (*import-fk* (:source-table &match) 'Card)))
+        (assoc :source-table (str "card__" (*import-fk*  'Card)))
         mbql-fully-qualified-names->ids*)
 
-    (_ :guard (every-pred map? (comp portable-id? :source_table)))
+    {:source_table (id :guard portable-id?)}
     (-> &match
-        (assoc :source_table (str "card__" (*import-fk* (:source_table &match) 'Card)))
+        (assoc :source_table (str "card__" (*import-fk* id 'Card)))
         mbql-fully-qualified-names->ids*) ;; process other keys
 
-    (_ :guard (every-pred map? (comp portable-id? :snippet-id)))
+    {::snippet-id (id :guard portable-id?)}
     (-> &match
-        (assoc :snippet-id (*import-fk* (:snippet-id &match) 'NativeQuerySnippet))
+        (assoc :snippet-id (*import-fk* id 'NativeQuerySnippet))
         mbql-fully-qualified-names->ids*)))
 
 (defn- mbql-fully-qualified-names->ids
